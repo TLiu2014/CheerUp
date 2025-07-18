@@ -1,75 +1,158 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// import { Image } from 'expo-image';
+// import { Platform, StyleSheet } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// import { HelloWave } from '@/components/HelloWave';
+// import ParallaxScrollView from '@/components/ParallaxScrollView';
+// import { ThemedText } from '@/components/ThemedText';
+// import { ThemedView } from '@/components/ThemedView';
+
+// export default function HomeScreen() {
+//   return (
+//     <ParallaxScrollView
+//       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+//       headerImage={
+//         <Image
+//           source={require('@/assets/images/partial-react-logo.png')}
+//           style={styles.reactLogo}
+//         />
+//       }>
+//       <ThemedView style={styles.titleContainer}>
+//         <ThemedText type="title">Welcome!</ThemedText>
+//         <HelloWave />
+//       </ThemedView>
+//       <ThemedView style={styles.stepContainer}>
+//         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
+//         <ThemedText>
+//           Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
+//           Press{' '}
+//           <ThemedText type="defaultSemiBold">
+//             {Platform.select({
+//               ios: 'cmd + d',
+//               android: 'cmd + m',
+//               web: 'F12',
+//             })}
+//           </ThemedText>{' '}
+//           to open developer tools.
+//         </ThemedText>
+//       </ThemedView>
+//       <ThemedView style={styles.stepContainer}>
+//         <ThemedText type="subtitle">Step 2: Explore</ThemedText>
+//         <ThemedText>
+//           {`Tap the Explore tab to learn more about what's included in this starter app.`}
+//         </ThemedText>
+//       </ThemedView>
+//       <ThemedView style={styles.stepContainer}>
+//         <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
+//         <ThemedText>
+//           {`When you're ready, run `}
+//           <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
+//           <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
+//           <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
+//           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
+//         </ThemedText>
+//       </ThemedView>
+//     </ParallaxScrollView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   titleContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 8,
+//   },
+//   stepContainer: {
+//     gap: 8,
+//     marginBottom: 8,
+//   },
+//   reactLogo: {
+//     height: 178,
+//     width: 290,
+//     bottom: 0,
+//     left: 0,
+//     position: 'absolute',
+//   },
+// });
+// app/index.tsx
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
+
+type Slide = {
+  id: string;
+  title?: string;
+  description?: string;
+  image?: string;
+};
 
 export default function HomeScreen() {
+  const [slides, setSlides] = useState<Slide[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSlides = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'items'));
+        const items = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setSlides(items);
+        // console.log(items);
+      } catch (error) {
+        console.error('Error fetching slides:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSlides();
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator size="large" style={{ marginTop: 100 }} />;
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <FlatList
+      data={slides}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.container}
+      renderItem={({ item }) => (
+        <View style={styles.card}>
+          <Image source={{ uri: item.image }} style={styles.image} />
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.desc}>{item.description}</Text>
+        </View>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    padding: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  card: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    elevation: 2,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  image: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+  },
+  title: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  desc: {
+    fontSize: 14,
+    color: '#666',
   },
 });
